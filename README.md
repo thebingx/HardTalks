@@ -361,3 +361,56 @@ XIAOMI_API_KEY=your_actual_key_here
 ---
 
 **Built with ❤️ using FastAPI, Faster Whisper, and Xiaomi MiMO**
+
+## Enhanced TTS Features
+
+### Multiple English Voices
+The system now supports multiple high-quality English voices:
+
+- **en_US-amy-medium** (default): Female, clear, natural
+- **en_US-lessac-medium**: Male, clear, natural (recommended)
+- **en_US-ryan-medium**: Male, warm, natural
+
+### Chinese Language Support
+The system now supports Chinese text-to-speech:
+
+- **Automatic language detection**: Detects Chinese characters in text
+- **Mixed language support**: Handles English/Chinese mixed text
+- **espeak-ng fallback**: Uses system espeak-ng for Chinese when Piper models aren't available
+
+### Voice Configuration
+
+Update your `.env` file to use different voices:
+
+```bash
+# English voice (recommended for better quality)
+REALTIMETTS_VOICE_EN=en_US-lessac-medium
+
+# Chinese voice (uses English voice as fallback)
+REALTIMETTS_VOICE_ZH=en_US-amy-medium
+
+# Default voice (fallback)
+REALTIMETTS_VOICE=en_US-amy-medium
+```
+
+### Language Detection
+The system automatically:
+1. Detects Chinese characters using Unicode ranges
+2. Selects appropriate voice for the language
+3. Falls back to espeak-ng for Chinese if needed
+4. Maintains high quality for English with Piper
+
+### Example Usage
+```
+English: "Hello, how are you today?"
+Chinese: "你好，今天怎么样？"
+Mixed: "Hello, 你好！Welcome to HardTalks."
+```
+
+## Performance Improvements
+
+- **GPU Acceleration**: Enabled for both STT and TTS
+- **Better Voice Quality**: New male voices with improved clarity
+- **Language Detection**: Automatic switching between English/Chinese
+- **Fallback System**: Multiple layers of fallback for reliability
+

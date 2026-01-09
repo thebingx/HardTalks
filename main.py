@@ -77,9 +77,9 @@ class Config:
     REALTIMETTS_VOICE = os.getenv("REALTIMETTS_VOICE", "en_US-amy-medium")
     REALTIMETTS_GPU = os.getenv("REALTIMETTS_GPU", "False").lower() == "true"  # Default to False for compatibility
     
-    # Xiaomi MiMO API Configuration
-    XIAOMI_API_KEY = os.getenv("XIAOMI_API_KEY", "")
-    XIAOMI_API_BASE = os.getenv("XIAOMI_API_BASE", "https://api.xiaomimimo.com/v1")
+    # Multi-voice Configuration for mixed language support
+    REALTIMETTS_VOICE_EN = os.getenv("REALTIMETTS_VOICE_EN", "en_US-lessac-medium")  # English voice
+    REALTIMETTS_VOICE_ZH = os.getenv("REALTIMETTS_VOICE_ZH", "en_US-amy-medium")     # Chinese voice (fallback to English if not available)
     
     # MiMO Model Configuration
     MIMO_MODEL = os.getenv("MIMO_MODEL", "mimo-v2-flash")  # Use lowercase as per API
@@ -154,9 +154,12 @@ async def lifespan(app: FastAPI):
     if REALTIMETTS_AVAILABLE:
         logger.info("🎤 RealtimeTTS available, using system TTS with Piper/espeak-ng")
         logger.info(f"📁 Model path: {Config.REALTIMETTS_MODEL_PATH}")
-        logger.info(f"🗣️  Voice: {Config.REALTIMETTS_VOICE}")
+        logger.info(f"🗣️  Default voice: {Config.REALTIMETTS_VOICE}")
+        logger.info(f"🗣️  English voice: {Config.REALTIMETTS_VOICE_EN}")
+        logger.info(f"🗣️  Chinese voice: {Config.REALTIMETTS_VOICE_ZH}")
         logger.info(f"🖥️  GPU enabled: {Config.REALTIMETTS_GPU}")
         logger.info("ℹ️  Note: RealtimeTTS provides the framework, system TTS handles synthesis")
+        logger.info("ℹ️  Mixed language support: Auto-detects English/Chinese")
     else:
         logger.info("ℹ️  RealtimeTTS not available, will use system TTS or mock")
     
@@ -367,13 +370,33 @@ async def real_tts(text: str) -> str:
 
 # System TTS fallback using piper directly
 async def system_tts(text: str) -> str:
-    """System TTS using piper Python API"""
+    """System TTS using piper Python API with language detection"""
     try:
         logger.info(f"🎤 Using system TTS with piper for: {text[:50]}...")
         
         import tempfile
         import wave
         import json
+        import re
+        
+        # Detect language and select appropriate voice
+        def detect_language(text: str) -> str:
+            """Detect if text contains Chinese characters"""
+            # Check for Chinese characters (CJK Unified Ideographs)
+            if re.search(r'[\u4e00-\u9fff]', text):
+                return 'zh'
+            return 'en'
+        
+        language = detect_language(text)
+        
+        # Select voice based on language
+        if language == 'zh':
+            # Try Chinese voice first, fallback to English
+            voice_name = Config.REALTIMETTS_VOICE_ZH
+            logger.info(f"Detected Chinese text, using voice: {voice_name}")
+        else:
+            voice_name = Config.REALTIMETTS_VOICE_EN
+            logger.info(f"Detected English text, using voice: {voice_name}")
         
         # Check if piper is available
         try:
@@ -383,8 +406,15 @@ async def system_tts(text: str) -> str:
             import onnxruntime as ort
             
             # Get model paths
-            model_path = f'{Config.REALTIMETTS_MODEL_PATH}/{Config.REALTIMETTS_VOICE}.onnx'
-            config_path = f'{Config.REALTIMETTS_MODEL_PATH}/{Config.REALTIMETTS_VOICE}.onnx.json'
+            model_path = f'{Config.REALTIMETTS_MODEL_PATH}/{voice_name}.onnx'
+            config_path = f'{Config.REALTIMETTS_MODEL_PATH}/{voice_name}.onnx.json'
+            
+            # Check if voice exists, fallback to default
+            if not os.path.exists(model_path):
+                logger.warning(f"Voice {voice_name} not found, falling back to {Config.REALTIMETTS_VOICE}")
+                voice_name = Config.REALTIMETTS_VOICE
+                model_path = f'{Config.REALTIMETTS_MODEL_PATH}/{voice_name}.onnx'
+                config_path = f'{Config.REALTIMETTS_MODEL_PATH}/{voice_name}.onnx.json'
             
             # Load config
             with open(config_path) as f:
@@ -422,20 +452,23 @@ async def system_tts(text: str) -> str:
             
             # Convert to base64
             audio_base64 = base64.b64encode(audio_data).decode()
-            logger.info(f"✅ Piper TTS completed: {len(audio_base64)} characters")
+            logger.info(f"✅ Piper TTS completed: {len(audio_base64)} characters using {voice_name}")
             return audio_base64
                 
         except Exception as e:
             logger.warning(f"Piper TTS failed: {e}")
             
-        # Try espeak-ng as fallback
+        # Try espeak-ng as fallback (supports Chinese via espeak-ng -v zh)
         try:
             import subprocess
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
                 temp_path = temp_file.name
             
+            # Use appropriate voice for espeak-ng
+            voice_flag = '-v zh+cmn' if language == 'zh' else '-v en-us'
+            
             subprocess.run([
-                'espeak-ng', '-w', temp_path, text
+                'espeak-ng', voice_flag, '-w', temp_path, text
             ], check=True, capture_output=True)
             
             with open(temp_path, "rb") as audio_file:
@@ -444,7 +477,7 @@ async def system_tts(text: str) -> str:
             os.unlink(temp_path)
             
             audio_base64 = base64.b64encode(audio_data).decode()
-            logger.info(f"✅ espeak-ng TTS completed: {len(audio_base64)} characters")
+            logger.info(f"✅ espeak-ng TTS completed: {len(audio_base64)} characters ({language})")
             return audio_base64
             
         except (subprocess.CalledProcessError, FileNotFoundError):
