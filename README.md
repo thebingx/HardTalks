@@ -376,8 +376,8 @@ The system now supports Chinese text-to-speech:
 
 - **Automatic language detection**: Detects Chinese characters in text
 - **Mixed language support**: Handles English/Chinese mixed text
-- **espeak-ng integration**: Uses system espeak-ng with Chinese voice (cmn) for high-quality Chinese TTS
-- **Smart fallback**: Falls back to English voice if Chinese TTS fails
+- **Piper Chinese voices**: Uses zh_CN-huayan-medium (female) or zh_CN-huayan-x_low for high-quality Chinese TTS
+- **Smart fallback**: Falls back to espeak-ng if Piper Chinese voices unavailable
 
 ### Voice Configuration
 
@@ -387,8 +387,8 @@ Update your `.env` file to use different voices:
 # English voice (recommended for better quality)
 REALTIMETTS_VOICE_EN=en_US-ryan-high
 
-# Chinese voice (uses espeak-ng with Chinese support)
-REALTIMETTS_VOICE_ZH=espeak-ng-cmn
+# Chinese voice (Piper Chinese model)
+REALTIMETTS_VOICE_ZH=zh_CN-huayan-medium
 
 # Default voice (fallback)
 REALTIMETTS_VOICE=en_US-amy-medium

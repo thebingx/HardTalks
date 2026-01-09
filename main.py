@@ -79,7 +79,7 @@ class Config:
     
     # Multi-voice Configuration for mixed language support
     REALTIMETTS_VOICE_EN = os.getenv("REALTIMETTS_VOICE_EN", "en_US-ryan-high")      # English voice (high quality)
-    REALTIMETTS_VOICE_ZH = os.getenv("REALTIMETTS_VOICE_ZH", "espeak-ng-zh")         # Chinese voice (uses espeak-ng)
+    REALTIMETTS_VOICE_ZH = os.getenv("REALTIMETTS_VOICE_ZH", "zh_CN-huayan-medium")  # Chinese voice (Piper)
     
     # Xiaomi MiMO API Configuration
     XIAOMI_API_KEY = os.getenv("XIAOMI_API_KEY", "")
@@ -395,42 +395,15 @@ async def system_tts(text: str) -> str:
         
         # Select voice based on language
         if language == 'zh':
-            # Use espeak-ng for Chinese (Piper Chinese voices not available)
+            # Use Chinese Piper voice
             voice_name = Config.REALTIMETTS_VOICE_ZH
-            logger.info(f"Detected Chinese text, using espeak-ng Chinese voice")
-            
-            # Use espeak-ng directly for Chinese
-            try:
-                import subprocess
-                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
-                    temp_path = temp_file.name
-                
-                # Use Chinese voice for espeak-ng
-                subprocess.run([
-                    'espeak-ng', '-v', 'cmn', '-w', temp_path, text
-                ], check=True, capture_output=True)
-                
-                with open(temp_path, "rb") as audio_file:
-                    audio_data = audio_file.read()
-                
-                os.unlink(temp_path)
-                
-                audio_base64 = base64.b64encode(audio_data).decode()
-                logger.info(f"✅ espeak-ng Chinese TTS completed: {len(audio_base64)} characters")
-                return audio_base64
-                
-            except Exception as e:
-                logger.warning(f"espeak-ng Chinese failed: {e}")
-                # Fallback to English voice
-                voice_name = Config.REALTIMETTS_VOICE_EN
-                logger.info(f"Falling back to English voice: {voice_name}")
-        
+            logger.info(f"Detected Chinese text, using voice: {voice_name}")
         else:
             # English text - use Piper
             voice_name = Config.REALTIMETTS_VOICE_EN
             logger.info(f"Detected English text, using voice: {voice_name}")
         
-        # Use Piper for English (and fallback for Chinese)
+        # Use Piper for both English and Chinese
         try:
             # Import piper components
             from piper.voice import PiperVoice
