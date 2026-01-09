@@ -80,6 +80,95 @@
             50% { opacity: 0.5; }
         }
 
+        /* Progress Stages */
+        .progress-stages {
+            display: flex;
+            gap: 15px;
+            padding: 12px 20px;
+            background: linear-gradient(to right, #f8f9fa, #ffffff);
+            border-bottom: 1px solid #e9ecef;
+            font-size: 11px;
+            align-items: center;
+            justify-content: space-around;
+        }
+
+        .stage {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.4;
+            transition: all 0.4s ease;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .stage.active {
+            opacity: 1;
+            font-weight: 600;
+            background: #e7f0ff;
+            transform: translateY(-1px);
+        }
+
+        .stage.completed {
+            opacity: 0.8;
+            background: #d4edda;
+        }
+
+        .stage-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            background: white;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+
+        .stage.active .stage-icon {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+            animation: stagePulse 1.5s infinite;
+            box-shadow: 0 0 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .stage.completed .stage-icon {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+            animation: checkmark 0.5s ease;
+        }
+
+        @keyframes stagePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes checkmark {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .stage-text {
+            white-space: nowrap;
+            font-size: 10px;
+        }
+
+        .stage.active .stage-text {
+            color: #667eea;
+        }
+
+        .stage.completed .stage-text {
+            color: #28a745;
+            text-decoration: line-through;
+        }
+
         .chat-container {
             flex: 1;
             overflow-y: auto;
@@ -134,6 +223,30 @@
             color: #666;
             margin-top: 4px;
             text-align: right;
+        }
+
+        .message.processing .message-bubble {
+            opacity: 0.7;
+            position: relative;
+        }
+
+        .message.processing .message-bubble::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            margin: -8px 0 0 -8px;
+            border: 2px solid #667eea;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .typing-indicator {
@@ -407,6 +520,25 @@
             </div>
         </div>
 
+        <div class="progress-stages" id="progressStages" style="display: none;">
+            <div class="stage" id="stage1">
+                <div class="stage-icon">1</div>
+                <span class="stage-text">Transcribing Audio</span>
+            </div>
+            <div class="stage" id="stage2">
+                <div class="stage-icon">2</div>
+                <span class="stage-text">Thinking</span>
+            </div>
+            <div class="stage" id="stage3">
+                <div class="stage-icon">3</div>
+                <span class="stage-text">Getting Ready to Respond</span>
+            </div>
+        </div>
+
+        <div class="progress-bar-container" id="progressBarContainer" style="display: none; background: #f0f0f0; height: 3px; overflow: hidden;">
+            <div class="progress-bar" id="progressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.5s ease;"></div>
+        </div>
+
         <div class="chat-container" id="chatContainer">
             <div class="info-panel">
                 <strong>🎙️ Full Audio Interaction Enabled</strong>
@@ -535,7 +667,75 @@
                 }
             }
 
+            showProgressStages() {
+                document.getElementById('progressStages').style.display = 'flex';
+                this.showProgressBar();
+                this.resetStages();
+            }
+
+            hideProgressStages() {
+                document.getElementById('progressStages').style.display = 'none';
+                this.hideProgressBar();
+                this.resetStages();
+            }
+
+            resetStages() {
+                ['stage1', 'stage2', 'stage3'].forEach(id => {
+                    const stage = document.getElementById(id);
+                    stage.classList.remove('active', 'completed');
+                });
+            }
+
+            setStage1Active() {
+                this.resetStages();
+                document.getElementById('stage1').classList.add('active');
+                this.updateStatus('Transcribing audio...', 'info');
+                this.updateProgressBar(33);
+            }
+
+            setStage2Active() {
+                this.resetStages();
+                document.getElementById('stage1').classList.add('completed');
+                document.getElementById('stage2').classList.add('active');
+                this.updateStatus('Thinking...', 'info');
+                this.updateProgressBar(66);
+            }
+
+            setStage3Active() {
+                this.resetStages();
+                document.getElementById('stage1').classList.add('completed');
+                document.getElementById('stage2').classList.add('completed');
+                document.getElementById('stage3').classList.add('active');
+                this.updateStatus('Getting ready to respond...', 'info');
+                this.updateProgressBar(90);
+            }
+
+            setAllStagesCompleted() {
+                this.resetStages();
+                document.getElementById('stage1').classList.add('completed');
+                document.getElementById('stage2').classList.add('completed');
+                document.getElementById('stage3').classList.add('completed');
+                this.updateStatus('Ready', 'success');
+                this.updateProgressBar(100);
+            }
+
+            showProgressBar() {
+                document.getElementById('progressBarContainer').style.display = 'block';
+                this.updateProgressBar(0);
+            }
+
+            hideProgressBar() {
+                document.getElementById('progressBarContainer').style.display = 'none';
+                this.updateProgressBar(0);
+            }
+
+            updateProgressBar(percent) {
+                const bar = document.getElementById('progressBar');
+                bar.style.width = percent + '%';
+            }
+
             showLoading(text = 'Processing...') {
+                // Keep this for backward compatibility, but prefer progress stages
                 this.loadingText.textContent = text;
                 this.loadingOverlay.classList.add('active');
             }
@@ -544,9 +744,12 @@
                 this.loadingOverlay.classList.remove('active');
             }
 
-            addMessage(content, isUser = false, audioData = null) {
+            addMessage(content, isUser = false, audioData = null, isProcessing = false) {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+                if (isProcessing) {
+                    messageDiv.classList.add('processing');
+                }
                 
                 const bubble = document.createElement('div');
                 bubble.className = 'message-bubble';
@@ -575,6 +778,41 @@
                 if (audioData && !isUser) {
                     this.playAudio(audioData);
                 }
+
+                return messageDiv;
+            }
+
+            updateMessageContent(messageDiv, content, audioData = null) {
+                if (!messageDiv) return;
+                
+                // Remove processing state
+                messageDiv.classList.remove('processing');
+                
+                // Update content
+                const bubble = messageDiv.querySelector('.message-bubble');
+                if (bubble) {
+                    // Clear existing content but keep the time element
+                    const time = bubble.querySelector('.message-time');
+                    bubble.textContent = content;
+                    
+                    // Re-add time
+                    if (time) {
+                        const newTime = document.createElement('div');
+                        newTime.className = 'message-time';
+                        newTime.textContent = time.textContent;
+                        bubble.appendChild(newTime);
+                    } else {
+                        const newTime = document.createElement('div');
+                        newTime.className = 'message-time';
+                        newTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        bubble.appendChild(newTime);
+                    }
+                }
+
+                // Play audio if provided
+                if (audioData) {
+                    this.playAudio(audioData);
+                }
             }
 
             showTyping() {
@@ -593,7 +831,10 @@
                 this.messageInput.value = '';
                 this.addMessage(message, true);
                 this.showTyping();
-                this.updateStatus('Processing...', 'info');
+                
+                // Show progress stages for text messages
+                this.showProgressStages();
+                this.setStage2Active(); // Skip stage 1 (no transcription needed for text)
 
                 try {
                     if (this.useWebSocket && this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -606,12 +847,11 @@
                     this.hideTyping();
                     this.addMessage('Sorry, I encountered an error. Please try again.', false);
                     this.updateStatus('Error', 'error');
+                    this.hideProgressStages();
                 }
             }
 
             async sendHttpMessage(message) {
-                this.showLoading('Generating response...');
-                
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
@@ -625,12 +865,21 @@
 
                 const data = await response.json();
                 
-                this.hideLoading();
                 this.hideTyping();
                 
                 if (data.success) {
+                    // Stage 3: Getting ready to respond
+                    this.setStage3Active();
+                    
                     this.addMessage(data.response, false, data.audio_data);
-                    this.updateStatus('Ready', 'success');
+                    
+                    // All stages completed
+                    this.setAllStagesCompleted();
+                    
+                    // Hide progress stages after a delay
+                    setTimeout(() => {
+                        this.hideProgressStages();
+                    }, 2000);
                 } else {
                     throw new Error('API error');
                 }
@@ -654,8 +903,18 @@
                         this.hideTyping();
                         
                         if (data.success) {
+                            // Stage 3: Getting ready to respond
+                            this.setStage3Active();
+                            
                             this.addMessage(data.response, false, data.audio_data);
-                            this.updateStatus('Ready', 'success');
+                            
+                            // All stages completed
+                            this.setAllStagesCompleted();
+                            
+                            // Hide progress stages after a delay
+                            setTimeout(() => {
+                                this.hideProgressStages();
+                            }, 2000);
                         } else {
                             reject(new Error('WebSocket error'));
                         }
@@ -730,7 +989,11 @@
             }
 
             async processAudio(audioBlob) {
-                this.showLoading('Transcribing audio...');
+                // Hide loading overlay, we'll use progress stages instead
+                this.hideLoading();
+                
+                // Show progress stages
+                this.showProgressStages();
                 
                 try {
                     // Convert blob to base64
@@ -740,27 +1003,34 @@
                             .reduce((data, byte) => data + String.fromCharCode(byte), '')
                     );
 
-                    // Show temporary message while processing
-                    this.addMessage('🎤 Recording...', true);
+                    // Show temporary message while processing (with processing state)
+                    const tempMessage = this.addMessage('🎤 Recording...', true, null, true);
                     this.showTyping();
 
                     // Send to backend
                     if (this.useWebSocket && this.ws && this.ws.readyState === WebSocket.OPEN) {
-                        await this.sendWebSocketAudio(base64Audio);
+                        await this.sendWebSocketAudio(base64Audio, tempMessage);
                     } else {
-                        await this.sendHttpAudio(base64Audio);
+                        await this.sendHttpAudio(base64Audio, tempMessage);
                     }
 
                 } catch (error) {
                     console.error('Error processing audio:', error);
                     this.addMessage('Sorry, I could not process your audio.', false);
                     this.updateStatus('Audio Error', 'error');
+                    this.hideProgressStages();
                 } finally {
-                    this.hideLoading();
+                    // Hide progress stages after completion
+                    setTimeout(() => {
+                        this.hideProgressStages();
+                    }, 2000);
                 }
             }
 
-            async sendHttpAudio(base64Audio) {
+            async sendHttpAudio(base64Audio, tempMessage) {
+                // Stage 1: Audio received, will transcribe
+                this.setStage1Active();
+                
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
@@ -778,25 +1048,38 @@
                 this.hideTyping();
                 
                 if (data.success) {
-                    // Remove the temporary "Recording..." message and add the actual transcribed text
-                    this.chatContainer.removeChild(this.chatContainer.lastChild);
+                    // Stage 2: Got transcription, thinking (already done by backend)
+                    this.setStage2Active();
                     
-                    // Add user message with transcribed text
+                    // Update the temporary message with actual transcribed text
                     if (data.transcribed_text) {
-                        this.addMessage(data.transcribed_text, true);
+                        this.updateMessageContent(tempMessage, data.transcribed_text);
                     } else {
-                        this.addMessage('🎤 [Audio Message]', true);
+                        this.updateMessageContent(tempMessage, '🎤 [Audio Message]');
                     }
+                    
+                    // Stage 3: Getting ready to respond with audio
+                    this.setStage3Active();
                     
                     // Add assistant response
                     this.addMessage(data.response, false, data.audio_data);
-                    this.updateStatus('Ready', 'success');
+                    
+                    // All stages completed
+                    this.setAllStagesCompleted();
+                    
+                    // Hide progress stages after a delay
+                    setTimeout(() => {
+                        this.hideProgressStages();
+                    }, 2000);
                 } else {
                     throw new Error('API error');
                 }
             }
 
-            async sendWebSocketAudio(base64Audio) {
+            async sendWebSocketAudio(base64Audio, tempMessage) {
+                // Stage 1: Audio received, will transcribe
+                this.setStage1Active();
+
                 const messageData = {
                     message: '',
                     audio_data: base64Audio,
@@ -815,19 +1098,29 @@
                         this.hideTyping();
                         
                         if (data.success) {
-                            // Remove the temporary "Recording..." message and add the actual transcribed text
-                            this.chatContainer.removeChild(this.chatContainer.lastChild);
+                            // Stage 2: Got transcription, thinking (already done by backend)
+                            this.setStage2Active();
                             
-                            // Add user message with transcribed text
+                            // Update the temporary message with actual transcribed text
                             if (data.transcribed_text) {
-                                this.addMessage(data.transcribed_text, true);
+                                this.updateMessageContent(tempMessage, data.transcribed_text);
                             } else {
-                                this.addMessage('🎤 [Audio Message]', true);
+                                this.updateMessageContent(tempMessage, '🎤 [Audio Message]');
                             }
+                            
+                            // Stage 3: Getting ready to respond with audio
+                            this.setStage3Active();
                             
                             // Add assistant response
                             this.addMessage(data.response, false, data.audio_data);
-                            this.updateStatus('Ready', 'success');
+                            
+                            // All stages completed
+                            this.setAllStagesCompleted();
+                            
+                            // Hide progress stages after a delay
+                            setTimeout(() => {
+                                this.hideProgressStages();
+                            }, 2000);
                         } else {
                             reject(new Error('WebSocket error'));
                         }
@@ -970,4 +1263,4 @@
         };
     </script>
 </body>
-</html>
+</html></html>
