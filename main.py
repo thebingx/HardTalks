@@ -79,7 +79,7 @@ class Config:
     
     # Multi-voice Configuration for mixed language support
     REALTIMETTS_VOICE_EN = os.getenv("REALTIMETTS_VOICE_EN", "en_US-ryan-high")      # English voice (high quality)
-    REALTIMETTS_VOICE_ZH = os.getenv("REALTIMETTS_VOICE_ZH", "en_US-amy-medium")     # Chinese voice (fallback to English if not available)
+    REALTIMETTS_VOICE_ZH = os.getenv("REALTIMETTS_VOICE_ZH", "espeak-ng-zh")         # Chinese voice (uses espeak-ng)
     
     # MiMO Model Configuration
     MIMO_MODEL = os.getenv("MIMO_MODEL", "mimo-v2-flash")  # Use lowercase as per API
@@ -391,14 +391,42 @@ async def system_tts(text: str) -> str:
         
         # Select voice based on language
         if language == 'zh':
-            # Try Chinese voice first, fallback to English
+            # Use espeak-ng for Chinese (Piper Chinese voices not available)
             voice_name = Config.REALTIMETTS_VOICE_ZH
-            logger.info(f"Detected Chinese text, using voice: {voice_name}")
+            logger.info(f"Detected Chinese text, using espeak-ng Chinese voice")
+            
+            # Use espeak-ng directly for Chinese
+            try:
+                import subprocess
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+                    temp_path = temp_file.name
+                
+                # Use Chinese voice for espeak-ng
+                subprocess.run([
+                    'espeak-ng', '-v', 'cmn', '-w', temp_path, text
+                ], check=True, capture_output=True)
+                
+                with open(temp_path, "rb") as audio_file:
+                    audio_data = audio_file.read()
+                
+                os.unlink(temp_path)
+                
+                audio_base64 = base64.b64encode(audio_data).decode()
+                logger.info(f"✅ espeak-ng Chinese TTS completed: {len(audio_base64)} characters")
+                return audio_base64
+                
+            except Exception as e:
+                logger.warning(f"espeak-ng Chinese failed: {e}")
+                # Fallback to English voice
+                voice_name = Config.REALTIMETTS_VOICE_EN
+                logger.info(f"Falling back to English voice: {voice_name}")
+        
         else:
+            # English text - use Piper
             voice_name = Config.REALTIMETTS_VOICE_EN
             logger.info(f"Detected English text, using voice: {voice_name}")
         
-        # Check if piper is available
+        # Use Piper for English (and fallback for Chinese)
         try:
             # Import piper components
             from piper.voice import PiperVoice
@@ -458,17 +486,17 @@ async def system_tts(text: str) -> str:
         except Exception as e:
             logger.warning(f"Piper TTS failed: {e}")
             
-        # Try espeak-ng as fallback (supports Chinese via espeak-ng -v zh)
+        # Try espeak-ng as final fallback
         try:
             import subprocess
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
                 temp_path = temp_file.name
             
             # Use appropriate voice for espeak-ng
-            voice_flag = '-v zh+cmn' if language == 'zh' else '-v en-us'
+            voice_flag = 'cmn' if language == 'zh' else 'en-us'
             
             subprocess.run([
-                'espeak-ng', voice_flag, '-w', temp_path, text
+                'espeak-ng', '-v', voice_flag, '-w', temp_path, text
             ], check=True, capture_output=True)
             
             with open(temp_path, "rb") as audio_file:
