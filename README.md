@@ -384,7 +384,7 @@ Update your `.env` file to use different voices:
 
 ```bash
 # English voice (recommended for better quality)
-REALTIMETTS_VOICE_EN=en_US-lessac-medium
+REALTIMETTS_VOICE_EN=en_US-ryan-high
 
 # Chinese voice (uses English voice as fallback)
 REALTIMETTS_VOICE_ZH=en_US-amy-medium

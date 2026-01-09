@@ -78,7 +78,7 @@ class Config:
     REALTIMETTS_GPU = os.getenv("REALTIMETTS_GPU", "False").lower() == "true"  # Default to False for compatibility
     
     # Multi-voice Configuration for mixed language support
-    REALTIMETTS_VOICE_EN = os.getenv("REALTIMETTS_VOICE_EN", "en_US-lessac-medium")  # English voice
+    REALTIMETTS_VOICE_EN = os.getenv("REALTIMETTS_VOICE_EN", "en_US-ryan-high")      # English voice (high quality)
     REALTIMETTS_VOICE_ZH = os.getenv("REALTIMETTS_VOICE_ZH", "en_US-amy-medium")     # Chinese voice (fallback to English if not available)
     
     # MiMO Model Configuration
