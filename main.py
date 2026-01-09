@@ -81,6 +81,10 @@ class Config:
     REALTIMETTS_VOICE_EN = os.getenv("REALTIMETTS_VOICE_EN", "en_US-ryan-high")      # English voice (high quality)
     REALTIMETTS_VOICE_ZH = os.getenv("REALTIMETTS_VOICE_ZH", "espeak-ng-zh")         # Chinese voice (uses espeak-ng)
     
+    # Xiaomi MiMO API Configuration
+    XIAOMI_API_KEY = os.getenv("XIAOMI_API_KEY", "")
+    XIAOMI_API_BASE = os.getenv("XIAOMI_API_BASE", "https://api.xiaomimimo.com/v1")
+    
     # MiMO Model Configuration
     MIMO_MODEL = os.getenv("MIMO_MODEL", "mimo-v2-flash")  # Use lowercase as per API
     MIMO_TEMPERATURE = float(os.getenv("MIMO_TEMPERATURE", "0.7"))
