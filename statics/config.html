@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HardTalks - Configuration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            background: #f8f9fa;
+            padding: 10px 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .config-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .config-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .config-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 13px;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            padding: 15px 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-chat {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-chat:hover:not(:disabled) {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            min-width: 250px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .json-preview {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: #e9ecef;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ HardTalks Configuration</h1>
+            <p>Configure your job interview scenario</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span id="statusText">Ready</span>
+            </div>
+            <div>
+                <span id="configStatus">Not Loaded</span>
+            </div>
+        </div>
+
+        <div class="config-container" id="configContainer">
+            <div class="config-section">
+                <h3>📋 Job Information</h3>
+                <div class="form-group">
+                    <label for="jobTitle">Job Title</label>
+                    <input type="text" id="jobTitle" placeholder="e.g., Senior Python Developer">
+                </div>
+                <div class="form-group">
+                    <label for="companyName">Company Name</label>
+                    <input type="text" id="companyName" placeholder="e.g., TechCorp Solutions">
+                </div>
+                <div class="form-group">
+                    <label for="jobDescription">Job Description</label>
+                    <textarea id="jobDescription" placeholder="Enter the complete job description here..."></textarea>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3>📄 Your Resume</h3>
+                <div class="form-group">
+                    <label for="yourResume">Your Name & Profile</label>
+                    <textarea id="yourResume" placeholder="Enter your full name and resume details here..."></textarea>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3>👤 Interviewer Profile</h3>
+                <div class="form-group">
+                    <label for="interviewerProfile">Interviewer Name & Profile</label>
+                    <textarea id="interviewerProfile" placeholder="Enter interviewer name and profile details here..."></textarea>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h3>💾 JSON Preview</h3>
+                <div class="json-preview" id="jsonPreview">Configuration will appear here...</div>
+            </div>
+
+            <div id="messageArea"></div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-secondary" id="loadBtn">Load Config</button>
+            <button class="btn btn-success" id="saveBtn">Save Config</button>
+            <button class="btn btn-chat" id="chatBtn">Go to Chat</button>
+            <button class="btn btn-secondary" id="sessionsBtn">See Past Sessions</button>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div id="loadingText">Processing...</div>
+        </div>
+    </div>
+
+    <script>
+        class ConfigApp {
+            constructor() {
+                // DOM elements
+                this.jobTitle = document.getElementById('jobTitle');
+                this.companyName = document.getElementById('companyName');
+                this.jobDescription = document.getElementById('jobDescription');
+                this.yourResume = document.getElementById('yourResume');
+                this.interviewerProfile = document.getElementById('interviewerProfile');
+                this.jsonPreview = document.getElementById('jsonPreview');
+                this.messageArea = document.getElementById('messageArea');
+                this.statusText = document.getElementById('statusText');
+                this.configStatus = document.getElementById('configStatus');
+                this.loadingOverlay = document.getElementById('loadingOverlay');
+                this.loadingText = document.getElementById('loadingText');
+
+                // Buttons
+                this.loadBtn = document.getElementById('loadBtn');
+                this.saveBtn = document.getElementById('saveBtn');
+                this.chatBtn = document.getElementById('chatBtn');
+                this.sessionsBtn = document.getElementById('sessionsBtn');
+
+                this.init();
+            }
+
+            init() {
+                // Event listeners
+                this.loadBtn.addEventListener('click', () => this.loadConfig());
+                this.saveBtn.addEventListener('click', () => this.saveConfig());
+                this.chatBtn.addEventListener('click', () => this.goToChat());
+                this.sessionsBtn.addEventListener('click', () => this.goToSessions());
+
+                // Auto-update preview on input changes
+                const inputs = document.querySelectorAll('input, textarea');
+                inputs.forEach(input => {
+                    input.addEventListener('input', () => this.updatePreview());
+                });
+
+                // Try to load existing config on startup
+                setTimeout(() => this.loadConfig(), 500);
+            }
+
+            showLoading(text = 'Processing...') {
+                this.loadingText.textContent = text;
+                this.loadingOverlay.classList.add('active');
+            }
+
+            hideLoading() {
+                this.loadingOverlay.classList.remove('active');
+            }
+
+            showMessage(text, type = 'info') {
+                const message = document.createElement('div');
+                message.className = `message ${type}`;
+                message.textContent = text;
+                this.messageArea.appendChild(message);
+                
+                setTimeout(() => {
+                    message.style.opacity = '0';
+                    setTimeout(() => message.remove(), 300);
+                }, 3000);
+            }
+
+            updateStatus(text, type = 'info') {
+                this.statusText.textContent = text;
+                const dot = document.querySelector('.status-dot');
+                
+                if (type === 'success') {
+                    dot.style.background = '#28a745';
+                } else if (type === 'error') {
+                    dot.style.background = '#dc3545';
+                } else if (type === 'warning') {
+                    dot.style.background = '#ffc107';
+                } else {
+                    dot.style.background = '#667eea';
+                }
+            }
+
+            getConfigFromForm() {
+                return {
+                    job_title: this.jobTitle.value || "Senior Python Developer",
+                    company_name: this.companyName.value || "TechCorp Solutions",
+                    job_description: this.jobDescription.value || "We are seeking an experienced Senior Python Developer...",
+                    your_resume: this.yourResume.value || "Alex Chen",
+                    interviewer_profile: this.interviewerProfile.value || "Sarah Johnson"
+                };
+            }
+
+            updatePreview() {
+                const config = this.getConfigFromForm();
+                if (config) {
+                    this.jsonPreview.textContent = JSON.stringify(config, null, 2);
+                }
+            }
+
+            async loadConfig() {
+                this.showLoading('Loading configuration...');
+                try {
+                    const response = await fetch('/api/config/load');
+                    if (response.ok) {
+                        const config = await response.json();
+                        this.populateForm(config);
+                        this.configStatus.textContent = 'Loaded';
+                        this.updateStatus('Configuration loaded', 'success');
+                        this.showMessage('Configuration loaded successfully', 'success');
+                    } else {
+                        this.configStatus.textContent = 'Not Found';
+                        this.updateStatus('No existing config', 'warning');
+                        this.showMessage('No existing configuration found, using defaults', 'info');
+                    }
+                } catch (error) {
+                    console.error('Load error:', error);
+                    this.updateStatus('Load failed', 'error');
+                    this.showMessage('Failed to load configuration', 'error');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            populateForm(config) {
+                // Job info
+                this.jobTitle.value = config.job_title || '';
+                this.companyName.value = config.company_name || '';
+                this.jobDescription.value = config.job_description || '';
+
+                // Resume and Interviewer (simplified)
+                this.yourResume.value = config.your_resume || '';
+                this.interviewerProfile.value = config.interviewer_profile || '';
+
+                this.updatePreview();
+            }
+
+            async saveConfig() {
+                const config = this.getConfigFromForm();
+                if (!config) return;
+
+                this.showLoading('Saving configuration...');
+                try {
+                    const response = await fetch('/api/config/save', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(config)
+                    });
+
+                    if (response.ok) {
+                        this.configStatus.textContent = 'Saved';
+                        this.updateStatus('Configuration saved', 'success');
+                        this.showMessage('Configuration saved successfully', 'success');
+                    } else {
+                        throw new Error('Save failed');
+                    }
+                } catch (error) {
+                    console.error('Save error:', error);
+                    this.updateStatus('Save failed', 'error');
+                    this.showMessage('Failed to save configuration', 'error');
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            goToChat() {
+                window.location.href = '/chat';
+            }
+
+            goToSessions() {
+                window.location.href = '/review';
+            }
+        }
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new ConfigApp();
+        });
+    </script>
+</body>
+</html>

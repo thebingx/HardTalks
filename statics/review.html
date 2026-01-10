@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Review Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .loading {
+            padding: 60px;
+            text-align: center;
+            background: #f8f9fa;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .report-content {
+            display: none;
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 35px;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            background: #fafafa;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: #667eea;
+            border-radius: 2px;
+        }
+
+        .score-box {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 18px;
+            margin-left: 10px;
+        }
+
+        .summary-text {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #495057;
+            font-style: italic;
+        }
+
+        .list-items {
+            list-style: none;
+            padding: 0;
+        }
+
+        .list-items li {
+            padding: 10px 0;
+            padding-left: 25px;
+            position: relative;
+            line-height: 1.5;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .list-items li:last-child {
+            border-bottom: none;
+        }
+
+        .list-items li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .list-items li.negative::before {
+            content: '⚠';
+            color: #dc3545;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .analysis-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            text-align: center;
+        }
+
+        .analysis-card h4 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .analysis-card p {
+            font-size: 16px;
+            font-weight: 600;
+            color: #667eea;
+            margin: 0;
+        }
+
+        .match-score {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .match-percentage {
+            font-size: 48px;
+            font-weight: 800;
+            color: #28a745;
+            line-height: 1;
+        }
+
+        .match-bar {
+            flex: 1;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .match-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 1s ease;
+            border-radius: 10px;
+        }
+
+        .quote-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-style: italic;
+            color: #856404;
+        }
+
+        .question-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .question-item {
+            padding: 8px 0;
+            border-bottom: 1px dashed #dee2e6;
+            font-weight: 500;
+        }
+
+        .question-item:last-child {
+            border-bottom: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            padding: 30px 40px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+
+        .session-selector {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .session-selector h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .session-item {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .session-item:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .session-item.selected {
+            background: #e7f0ff;
+            border-color: #667eea;
+            font-weight: 600;
+        }
+
+        .session-info {
+            flex: 1;
+        }
+
+        .session-time {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .session-badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .conversation-expander {
+            margin-top: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .expander-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .expander-header:hover {
+            background: #e9ecef;
+        }
+
+        .expander-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: white;
+        }
+
+        .expander-content.expanded {
+            max-height: 2000px;
+        }
+
+        .conversation-transcript {
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .transcript-message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+            background: #f8f9fa;
+        }
+
+        .transcript-message.user {
+            border-left-color: #28a745;
+            background: #e8f5e9;
+        }
+
+        .transcript-message.assistant {
+            border-left-color: #667eea;
+            background: #e7f0ff;
+        }
+
+        .transcript-role {
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .transcript-content {
+            color: #555;
+            white-space: pre-wrap;
+        }
+
+        .transcript-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .arrow {
+            transition: transform 0.3s;
+            font-size: 18px;
+        }
+
+        .arrow.rotated {
+            transform: rotate(180deg);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .close-modal:hover {
+            background: #f0f0f0;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #f5c6cb;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .job-info {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .job-info h3 {
+            color: #004085;
+            margin-bottom: 10px;
+        }
+
+        .job-info p {
+            margin: 5px 0;
+            color: #004085;
+            line-height: 1.4;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 0;
+            }
+            
+            .report-content {
+                padding: 20px;
+            }
+            
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Interview Performance Review</h1>
+            <p>Comprehensive feedback and analysis report</p>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Generating your interview review...</p>
+            <p style="font-size: 14px; color: #666; margin-top: 10px;">Analyzing conversation and creating feedback report</p>
+        </div>
+
+        <div class="error-message" id="error" style="display: none;">
+            <strong>Error loading review data</strong>
+            <p id="errorText"></p>
+        </div>
+
+        <div class="report-content" id="report">
+            <!-- Session Selector (hidden by default) -->
+            <div class="session-selector" id="sessionSelector" style="display: none;">
+                <h3>📋 Select Past Session</h3>
+                <div class="session-list" id="sessionList"></div>
+                <div style="margin-top: 15px; text-align: center;">
+                    <button class="btn btn-primary" onclick="reviewApp.loadSelectedSession()">Load Selected Session</button>
+                    <button class="btn btn-secondary" onclick="reviewApp.hideSessionSelector()">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Job Info -->
+            <div class="job-info" id="jobInfo"></div>
+
+            <!-- Overall Score -->
+            <div class="section">
+                <div class="section-title">
+                    Overall Performance Score
+                    <span class="score-box" id="overallScore">--</span>
+                </div>
+                <p class="summary-text" id="summary"></p>
+            </div>
+
+            <!-- Strengths -->
+            <div class="section">
+                <div class="section-title">Strengths</div>
+                <ul class="list-items" id="strengths"></ul>
+            </div>
+
+            <!-- Weaknesses -->
+            <div class="section">
+                <div class="section-title">Areas for Improvement</div>
+                <ul class="list-items" id="weaknesses"></ul>
+            </div>
+
+            <!-- Detailed Analysis -->
+            <div class="section">
+                <div class="section-title">Detailed Analysis</div>
+                <div class="analysis-grid" id="detailedAnalysis"></div>
+            </div>
+
+            <!-- Resume-Job Match -->
+            <div class="section">
+                <div class="section-title">Resume-Job Alignment</div>
+                <div class="match-score">
+                    <div class="match-percentage" id="matchScore">--%</div>
+                    <div class="match-bar">
+                        <div class="match-bar-fill" id="matchBarFill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <p class="summary-text" id="matchJustification"></p>
+            </div>
+
+            <!-- Interviewer Insights -->
+            <div class="section">
+                <div class="section-title">Interviewer Insights</div>
+                <div class="quote-box" id="interviewerNuances"></div>
+            </div>
+
+            <!-- Potential Questions -->
+            <div class="section">
+                <div class="section-title">Potential Follow-up Questions</div>
+                <div class="question-list" id="potentialQuestions"></div>
+            </div>
+
+            <!-- Preparation Advice -->
+            <div class="section">
+                <div class="section-title">Strategic Preparation Advice</div>
+                <ul class="list-items" id="prepAdvice"></ul>
+            </div>
+
+            <!-- Conversation Transcript Expander -->
+            <div class="conversation-expander">
+                <div class="expander-header" onclick="reviewApp.toggleConversation()">
+                    <span style="font-weight: 600; color: #667eea;">📄 Complete Conversation Transcript</span>
+                    <span class="arrow" id="conversationArrow">▼</span>
+                </div>
+                <div class="expander-content" id="conversationContent">
+                    <div class="conversation-transcript" id="conversationTranscript"></div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="window.print()">🖨️ Print Report</button>
+                <button class="btn btn-secondary" onclick="window.location.href='/chat'">🔄 New Interview</button>
+                <button class="btn btn-secondary" onclick="reviewApp.showSessionSelector()">📂 Past Sessions</button>
+                <button class="btn btn-secondary" onclick="reviewApp.loadCurrentSession()" id="currentSessionBtn" style="display: none;">📋 Current Session</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ReviewApp {
+            constructor() {
+                this.currentConversation = null;
+                this.currentJobData = null;
+                this.availableSessions = [];
+                this.selectedSession = null;
+                this.init();
+            }
+
+            async init() {
+                try {
+                    // Check URL parameters for session selection
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const sessionId = urlParams.get('session');
+                    
+                    if (sessionId) {
+                        // Load specific session
+                        await this.loadSessionById(sessionId);
+                        // Show "Current Session" button
+                        document.getElementById('currentSessionBtn').style.display = 'inline-flex';
+                    } else {
+                        // Load current session data
+                        const response = await fetch('/api/review/data');
+                        
+                        if (response.status === 404) {
+                            // No data available
+                            this.showError('No interview data found. Please complete an interview session first.');
+                            return;
+                        }
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const result = await response.json();
+                        if (!result.success) {
+                            // Show a more helpful message based on the error
+                            if (result.error === 'No job scenario configured') {
+                                this.showError('No job scenario configured. Please set up a job scenario in the configuration page.');
+                            } else if (result.error === 'No conversations found') {
+                                this.showError('No conversation history found. Please complete an interview session first.');
+                            } else {
+                                throw new Error(result.error || 'Failed to load data');
+                            }
+                            return;
+                        }
+                        
+                        // Debug: log what we received
+                        console.log('API Response:', result);
+                        console.log('Type of job_data:', typeof result.job_data);
+                        console.log('Type of conversation:', typeof result.conversation);
+                        console.log('job_data value:', result.job_data);
+                        console.log('conversation value:', result.conversation);
+                        
+                        if (result.job_data === undefined || result.job_data === null) {
+                            throw new Error('Job data is undefined or null in response');
+                        }
+                        if (result.conversation === undefined || result.conversation === null) {
+                            throw new Error('Conversation data is undefined or null in response');
+                        }
+                        
+                        // Validate conversation structure
+                        if (!result.conversation.conversation || !Array.isArray(result.conversation.conversation)) {
+                            console.warn('Conversation structure issue:', result.conversation);
+                            throw new Error('Conversation data is not in expected format (missing conversation array)');
+                        }
+                        
+                        this.currentJobData = result.job_data;
+                        this.currentConversation = result.conversation;
+                        
+                        console.log('Successfully set variables');
+                        console.log('currentJobData:', this.currentJobData);
+                        console.log('currentConversation:', this.currentConversation);
+                        console.log('currentConversation.conversation:', this.currentConversation.conversation);
+
+                        // Generate review
+                        await this.generateReview();
+                        
+                        // Hide "Current Session" button (already on current)
+                        document.getElementById('currentSessionBtn').style.display = 'none';
+                    }
+
+                } catch (error) {
+                    console.error('Init error:', error);
+                    this.showError(error.message);
+                }
+            }
+
+            async generateReview() {
+                try {
+                    // Validate data before sending
+                    console.log('generateReview - currentJobData:', this.currentJobData);
+                    console.log('generateReview - currentConversation:', this.currentConversation);
+                    
+                    if (!this.currentJobData) {
+                        throw new Error('Job data is missing');
+                    }
+                    if (!this.currentConversation) {
+                        throw new Error('Conversation object is missing');
+                    }
+                    
+                    // Handle different conversation structures
+                    let conversationArray;
+                    if (Array.isArray(this.currentConversation.conversation)) {
+                        conversationArray = this.currentConversation.conversation;
+                    } else if (Array.isArray(this.currentConversation)) {
+                        conversationArray = this.currentConversation;
+                    } else {
+                        throw new Error('Conversation data is not in expected format');
+                    }
+                    
+                    console.log('Conversation array:', conversationArray);
+
+                    const response = await fetch('/api/review/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            job_data: this.currentJobData,
+                            conversation: conversationArray
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const reviewData = await response.json();
+                    if (!reviewData.success) {
+                        throw new Error(reviewData.error || 'Failed to generate review');
+                    }
+
+                    this.displayReview(reviewData);
+
+                } catch (error) {
+                    console.error('generateReview error:', error);
+                    this.showError(error.message);
+                }
+            }
+
+            displayReview(data) {
+                // Hide loading, show report
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('report').style.display = 'block';
+
+                // Session Info (if viewing past session)
+                const urlParams = new URLSearchParams(window.location.search);
+                const sessionId = urlParams.get('session');
+                let headerHTML = '';
+                
+                if (sessionId) {
+                    headerHTML = `
+                        <div style="background: #fff3cd; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #ffc107;">
+                            <strong>📂 Viewing Past Session:</strong> ${sessionId}
+                        </div>
+                    `;
+                }
+
+                // Job Info
+                const jobInfo = document.getElementById('jobInfo');
+                jobInfo.innerHTML = headerHTML + `
+                    <h3>📋 Job Details</h3>
+                    <p><strong>Position:</strong> ${this.currentJobData.job_title}</p>
+                    <p><strong>Company:</strong> ${this.currentJobData.company_name}</p>
+                `;
+
+                // Overall Score
+                document.getElementById('overallScore').textContent = data.overallScore;
+                document.getElementById('summary').textContent = data.summary;
+
+                // Strengths
+                const strengthsList = document.getElementById('strengths');
+                strengthsList.innerHTML = data.strengths.map(s => `<li>${s}</li>`).join('');
+
+                // Weaknesses
+                const weaknessesList = document.getElementById('weaknesses');
+                weaknessesList.innerHTML = data.weaknesses.map(w => `<li class="negative">${w}</li>`).join('');
+
+                // Detailed Analysis
+                const analysisGrid = document.getElementById('detailedAnalysis');
+                const analysis = data.detailedAnalysis;
+                analysisGrid.innerHTML = `
+                    <div class="analysis-card">
+                        <h4>Communication</h4>
+                        <p>${analysis.communication}</p>
+                    </div>
+                    <div class="analysis-card">
+                        <h4>Technical Knowledge</h4>
+                        <p>${analysis.technicalKnowledge}</p>
+                    </div>
+                    <div class="analysis-card">
+                        <h4>Tone</h4>
+                        <p>${analysis.tone}</p>
+                    </div>
+                    <div class="analysis-card">
+                        <h4>Confidence</h4>
+                        <p>${analysis.confidence}</p>
+                    </div>
+                `;
+
+                // Match Score
+                document.getElementById('matchScore').textContent = data.matchScore + '%';
+                setTimeout(() => {
+                    document.getElementById('matchBarFill').style.width = data.matchScore + '%';
+                }, 100);
+                document.getElementById('matchJustification').textContent = data.matchJustification;
+
+                // Interviewer Nuances
+                document.getElementById('interviewerNuances').textContent = data.interviewerNuances;
+
+                // Potential Questions
+                const questionsList = document.getElementById('potentialQuestions');
+                questionsList.innerHTML = data.potentialQuestions.map(q => 
+                    `<div class="question-item">❓ ${q}</div>`
+                ).join('');
+
+                // Prep Advice
+                const prepList = document.getElementById('prepAdvice');
+                prepList.innerHTML = data.prepAdvice.map(a => `<li>${a}</li>`).join('');
+            }
+
+            showError(message) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('errorText').textContent = message;
+            }
+
+            toggleConversation() {
+                const content = document.getElementById('conversationContent');
+                const arrow = document.getElementById('conversationArrow');
+                
+                if (content.classList.contains('expanded')) {
+                    content.classList.remove('expanded');
+                    arrow.classList.remove('rotated');
+                } else {
+                    content.classList.add('expanded');
+                    arrow.classList.add('rotated');
+                    this.renderConversation();
+                }
+            }
+
+            renderConversation() {
+                const transcriptDiv = document.getElementById('conversationTranscript');
+                
+                if (!this.currentConversation) {
+                    transcriptDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No conversation data available</p></div>';
+                    return;
+                }
+
+                // Handle different conversation structures
+                let messages;
+                if (Array.isArray(this.currentConversation.conversation)) {
+                    messages = this.currentConversation.conversation;
+                } else if (Array.isArray(this.currentConversation)) {
+                    messages = this.currentConversation;
+                } else {
+                    transcriptDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>Invalid conversation format</p></div>';
+                    return;
+                }
+
+                if (messages.length === 0) {
+                    transcriptDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No messages in conversation</p></div>';
+                    return;
+                }
+
+                let html = '';
+
+                messages.forEach(msg => {
+                    const role = msg.role === 'user' ? 'Candidate' : 'Interviewer';
+                    const roleClass = msg.role === 'user' ? 'user' : 'assistant';
+                    const timestamp = new Date(msg.timestamp).toLocaleString();
+                    
+                    html += `
+                        <div class="transcript-message ${roleClass}">
+                            <div class="transcript-role">${role}</div>
+                            <div class="transcript-content">${msg.content}</div>
+                            <div class="transcript-time">${timestamp}</div>
+                        </div>
+                    `;
+                });
+
+                transcriptDiv.innerHTML = html;
+            }
+
+            async showSessionSelector() {
+                const selector = document.getElementById('sessionSelector');
+                const list = document.getElementById('sessionList');
+                
+                try {
+                    // Load available sessions
+                    const response = await fetch('/api/conversations/list');
+                    if (!response.ok) throw new Error('Failed to load sessions');
+                    
+                    const result = await response.json();
+                    if (!result.success) throw new Error(result.error);
+                    
+                    this.availableSessions = result.sessions;
+                    
+                    if (this.availableSessions.length === 0) {
+                        list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No past sessions found</p></div>';
+                    } else {
+                        list.innerHTML = this.availableSessions.map(session => `
+                            <div class="session-item" onclick="reviewApp.selectSession('${session.filename}')">
+                                <div class="session-info">
+                                    <div style="font-weight: 600;">${session.job_title || 'Interview Session'}</div>
+                                    <div class="session-time">${new Date(session.timestamp).toLocaleString()}</div>
+                                </div>
+                                <span class="session-badge">${session.message_count} messages</span>
+                            </div>
+                        `).join('');
+                    }
+                    
+                    selector.style.display = 'block';
+                    document.getElementById('report').scrollIntoView({ behavior: 'smooth' });
+                    
+                } catch (error) {
+                    alert('Failed to load sessions: ' + error.message);
+                }
+            }
+
+            hideSessionSelector() {
+                document.getElementById('sessionSelector').style.display = 'none';
+            }
+
+            selectSession(filename) {
+                // Remove previous selection
+                document.querySelectorAll('.session-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                
+                // Add selection to clicked item
+                event.currentTarget.classList.add('selected');
+                
+                // Store selection
+                this.selectedSession = filename;
+            }
+
+            async loadSelectedSession() {
+                if (!this.selectedSession) {
+                    alert('Please select a session first');
+                    return;
+                }
+                
+                await this.loadSessionById(this.selectedSession);
+                this.hideSessionSelector();
+            }
+
+            async loadSessionById(sessionId) {
+                try {
+                    // Show loading
+                    document.getElementById('loading').style.display = 'block';
+                    document.getElementById('report').style.display = 'none';
+                    document.getElementById('error').style.display = 'none';
+
+                    console.log('Loading session:', sessionId);
+
+                    // Load session data
+                    const response = await fetch(`/api/conversations/${sessionId}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('Session data:', result);
+                    
+                    if (!result.success) {
+                        throw new Error(result.error || 'Failed to load session');
+                    }
+
+                    // Validate data
+                    if (!result.job_data) {
+                        throw new Error('Job data not found in session');
+                    }
+                    if (!result.conversation) {
+                        throw new Error('Conversation data not found in session');
+                    }
+                    if (!result.conversation.conversation || !Array.isArray(result.conversation.conversation)) {
+                        throw new Error('Conversation format is invalid');
+                    }
+
+                    // Store data
+                    this.currentJobData = result.job_data;
+                    this.currentConversation = result.conversation;
+
+                    console.log('Session loaded successfully');
+
+                    // Generate review
+                    await this.generateReview();
+
+                } catch (error) {
+                    console.error('loadSessionById error:', error);
+                    this.showError(error.message);
+                }
+            }
+
+            async loadCurrentSession() {
+                // Remove session parameter from URL
+                window.history.replaceState({}, document.title, "/review");
+                
+                // Reload page to load current session
+                window.location.reload();
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ReviewApp();
+        });
+    </script>
+</body>
+</html>

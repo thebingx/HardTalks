@@ -394,6 +394,68 @@
             50% { opacity: 0.7; }
         }
 
+        /* Toggle Switch Styles */
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .toggle-handle {
+            position: absolute;
+            content: '';
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        /* When checked (ON state) */
+        #audioToggle:checked + .toggle-slider {
+            background-color: #218838;
+        }
+
+        #audioToggle:checked + .toggle-handle {
+            transform: translateX(20px);
+        }
+
+        /* When unchecked (OFF state) */
+        #audioToggle:not(:checked) + .toggle-slider {
+            background-color: #adb5bd;
+        }
+
+        #audioToggle:not(:checked) + .toggle-handle {
+            transform: translateX(0);
+        }
+
+        /* Container styles for ON/OFF states */
+        #audioToggleContainer.on {
+            background: #28a745;
+            border-color: #218838;
+        }
+
+        #audioToggleContainer.off {
+            background: #ffffff;
+            border-color: #e9ecef;
+        }
+
+        #audioToggleContainer.on #audioToggleLabel {
+            color: white;
+        }
+
+        #audioToggleContainer.off #audioToggleLabel {
+            color: #6c757d;
+        }
+
         .audio-visualizer {
             height: 40px;
             background: #f8f9fa;
@@ -506,8 +568,13 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🤖 HardTalks</h1>
-            <p>AI Chat Assistant with Full Audio Interaction</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="text-align: left;">
+                    <h1>🤖 HardTalks</h1>
+                    <p>AI Chat Assistant with Full Audio Interaction</p>
+                </div>
+                <button class="btn btn-secondary" id="configBtn" style="margin-left: 10px; min-width: 80px; padding: 8px 12px; font-size: 12px;">⚙️ Config</button>
+            </div>
         </div>
 
         <div class="status-bar">
@@ -516,7 +583,7 @@
                 <span id="statusText">Ready</span>
             </div>
             <div>
-                <span id="connectionType">HTTP</span> | <span id="sessionInfo">No Session</span>
+                <span id="connectionType">HTTP</span> | <span id="sessionInfo">No Session</span> | <span id="scenarioInfo">Standard</span>
             </div>
         </div>
 
@@ -544,8 +611,8 @@
                 <strong>🎙️ Full Audio Interaction Enabled</strong>
                 • Click "Record Audio" to speak to the bot<br>
                 • The bot will respond with both text and audio<br>
-                • Uses local Whisper for STT and Coqui for TTS<br>
-                • Xiaomi MiMO-V2-Flash as the AI brain
+                • Click "End Chat" to save conversation and end session<br>
+                • Uses local Whisper for STT and Coqui for TTS
             </div>
             <div class="message assistant">
                 <div class="message-bubble">
@@ -579,8 +646,15 @@
 
             <div class="button-group">
                 <button class="btn btn-record" id="recordBtn">🎤 Record Audio</button>
-                <button class="btn btn-secondary" id="clearBtn">Clear Chat</button>
-                <button class="btn btn-danger" id="disconnectBtn">Disconnect</button>
+                <button class="btn btn-danger" id="endBtn">End Chat</button>
+                <div id="audioToggleContainer" style="display: flex; align-items: center; gap: 8px; background: #28a745; padding: 8px 12px; border-radius: 25px; border: 2px solid #218838; transition: all 0.3s;">
+                    <span id="audioToggleLabel" style="font-size: 12px; font-weight: 600; color: white;">🔊 Audio ON</span>
+                    <label class="switch" style="position: relative; display: inline-block; width: 40px; height: 20px;">
+                        <input type="checkbox" id="audioToggle" checked style="opacity: 0; width: 0; height: 0;">
+                        <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px;"></span>
+                        <span class="toggle-handle" style="position: absolute; content: ''; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%;"></span>
+                    </label>
+                </div>
             </div>
         </div>
     </div>
@@ -601,6 +675,10 @@
                 this.mediaRecorder = null;
                 this.audioChunks = [];
                 this.useWebSocket = false; // Start with HTTP, can switch to WebSocket
+                this.audioEnabled = true; // Audio responses enabled by default
+                this.jobScenario = false; // Job interview scenario flag
+                this.jobScenarioData = null; // Job scenario configuration
+                this.sessionEnded = false; // Track if session has ended
                 
                 // DOM elements
                 this.chatContainer = document.getElementById('chatContainer');
@@ -608,7 +686,6 @@
                 this.sendBtn = document.getElementById('sendBtn');
                 this.recordBtn = document.getElementById('recordBtn');
                 this.clearBtn = document.getElementById('clearBtn');
-                this.disconnectBtn = document.getElementById('disconnectBtn');
                 this.typingIndicator = document.getElementById('typingIndicator');
                 this.statusText = document.getElementById('statusText');
                 this.connectionType = document.getElementById('connectionType');
@@ -621,6 +698,9 @@
             }
 
             async init() {
+                // Load job interview scenario
+                await this.loadJobScenario();
+                
                 // Create new session
                 await this.createSession();
 
@@ -630,13 +710,80 @@
                     if (e.key === 'Enter') this.handleSend();
                 });
                 this.recordBtn.addEventListener('click', () => this.toggleRecording());
-                this.clearBtn.addEventListener('click', () => this.clearChat());
-                this.disconnectBtn.addEventListener('click', () => this.disconnect());
+                
+                // End Chat button
+                const endBtn = document.getElementById('endBtn');
+                if (endBtn) {
+                    endBtn.addEventListener('click', () => this.endSession());
+                }
+                
+                // Config button
+                const configBtn = document.getElementById('configBtn');
+                if (configBtn) {
+                    configBtn.addEventListener('click', () => this.goToConfig());
+                }
+
+                // Audio toggle switch
+                const audioToggle = document.getElementById('audioToggle');
+                
+                if (audioToggle) {
+                    // Initialize visual state
+                    this.updateAudioToggleVisual(audioToggle.checked);
+                    
+                    audioToggle.addEventListener('change', (e) => {
+                        this.audioEnabled = e.target.checked;
+                        this.updateAudioToggleVisual(this.audioEnabled);
+                        this.updateStatus(this.audioEnabled ? 'Audio responses enabled' : 'Audio responses disabled', this.audioEnabled ? 'success' : 'warning');
+                    });
+                }
 
                 // Enable send button
                 this.messageInput.disabled = false;
                 this.sendBtn.disabled = false;
                 this.recordBtn.disabled = false;
+            }
+
+            async loadJobScenario() {
+                try {
+                    const response = await fetch('/api/job-scenario');
+                    const data = await response.json();
+                    
+                    if (data.success && data.enabled) {
+                        this.jobScenarioData = data.scenario;
+                        this.jobScenario = true;
+                        console.log('✅ Job scenario loaded:', this.jobScenarioData);
+                        
+                        // Update status bar
+                        const scenarioInfo = document.getElementById('scenarioInfo');
+                        if (scenarioInfo) {
+                            scenarioInfo.textContent = `Interview: ${this.jobScenarioData.job_title || 'Job'}`;
+                            scenarioInfo.style.color = '#28a745';
+                            scenarioInfo.style.fontWeight = 'bold';
+                        }
+                        
+                        // Show job scenario info in chat
+                        const jobInfo = document.createElement('div');
+                        jobInfo.className = 'info-panel';
+                        jobInfo.innerHTML = `
+                            <strong>📋 Job Interview Scenario Loaded</strong>
+                            Position: ${this.jobScenarioData.job_title || 'Unknown'}<br>
+                            Company: ${this.jobScenarioData.company_name || 'Xiaomi'}<br>
+                        `;
+                        this.chatContainer.insertBefore(jobInfo, this.chatContainer.firstChild.nextSibling);
+                        
+                        // Update welcome message
+                        const welcomeMsg = this.chatContainer.querySelector('.message.assistant .message-bubble');
+                        if (welcomeMsg) {
+                            welcomeMsg.textContent = `Hello! I'm your ${this.jobScenarioData.company_name || 'Xiaomi'} interview trainer. I'll be conducting a job interview for the ${this.jobScenarioData.job_title || 'position'}. Let's begin! 🚀`;
+                        }
+                    } else {
+                        console.log('ℹ️  No job scenario configured');
+                        this.jobScenario = false;
+                    }
+                } catch (error) {
+                    console.log('ℹ️  Job scenario not available:', error);
+                    this.jobScenario = false;
+                }
             }
 
             async createSession() {
@@ -664,6 +811,16 @@
                     dot.style.background = '#ffc107';
                 } else {
                     dot.style.background = '#667eea';
+                }
+                
+                // Update scenario info if job scenario is active
+                if (this.jobScenario) {
+                    const scenarioInfo = document.getElementById('scenarioInfo');
+                    if (scenarioInfo && !scenarioInfo.textContent.includes('Interview')) {
+                        scenarioInfo.textContent = `Interview: ${this.jobScenarioData.job_title || 'Job'}`;
+                        scenarioInfo.style.color = '#28a745';
+                        scenarioInfo.style.fontWeight = 'bold';
+                    }
                 }
             }
 
@@ -825,6 +982,11 @@
             }
 
             async handleSend() {
+                if (this.sessionEnded) {
+                    this.updateStatus('Session has ended. Refresh to start new session.', 'warning');
+                    return;
+                }
+
                 const message = this.messageInput.value.trim();
                 if (!message) return;
 
@@ -859,7 +1021,9 @@
                     },
                     body: JSON.stringify({
                         message: message,
-                        session_id: this.sessionId
+                        session_id: this.sessionId,
+                        audio_enabled: this.audioEnabled,
+                        job_scenario: this.jobScenario
                     })
                 });
 
@@ -871,7 +1035,9 @@
                     // Stage 3: Getting ready to respond
                     this.setStage3Active();
                     
-                    this.addMessage(data.response, false, data.audio_data);
+                    // Only play audio if audio is enabled
+                    const audioData = this.audioEnabled ? data.audio_data : null;
+                    this.addMessage(data.response, false, audioData);
                     
                     // All stages completed
                     this.setAllStagesCompleted();
@@ -885,10 +1051,154 @@
                 }
             }
 
+            goToConfig() {
+                window.location.href = '/';
+            }
+
+            async endSession() {
+                if (!this.sessionId) {
+                    this.updateStatus('No active session', 'warning');
+                    return;
+                }
+
+                if (!confirm('Are you sure you want to end this session? The conversation will be saved.')) {
+                    return;
+                }
+
+                this.updateStatus('Ending session...', 'warning');
+                this.showLoading('Ending session and saving conversation...');
+
+                try {
+                    if (this.useWebSocket && this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        // End session via WebSocket
+                        const messageData = {
+                            action: 'end_session'
+                        };
+                        this.ws.send(JSON.stringify(messageData));
+                        
+                        // Wait for response
+                        return new Promise((resolve, reject) => {
+                            const timeout = setTimeout(() => {
+                                reject(new Error('WebSocket timeout'));
+                            }, 10000);
+
+                            const handleMessage = (event) => {
+                                clearTimeout(timeout);
+                                const data = JSON.parse(event.data);
+                                
+                                if (data.action === 'session_ended') {
+                                    this.handleSessionEnd(data.conversation_file);
+                                    resolve();
+                                } else {
+                                    reject(new Error('Unexpected response'));
+                                }
+                                
+                                this.ws.removeEventListener('message', handleMessage);
+                            };
+
+                            this.ws.addEventListener('message', handleMessage);
+                        });
+                    } else {
+                        // End session via HTTP
+                        const response = await fetch('/api/session/end', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                session_id: this.sessionId
+                            })
+                        });
+
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            this.handleSessionEnd(data.conversation_file);
+                        } else {
+                            throw new Error(data.error || 'Failed to end session');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error ending session:', error);
+                    this.updateStatus('Error ending session', 'error');
+                    this.addMessage('Sorry, there was an error ending the session. Please try again.', false);
+                } finally {
+                    this.hideLoading();
+                }
+            }
+
+            handleSessionEnd(conversationFile) {
+                // Update UI
+                this.updateStatus('Session ended, redirecting to review...', 'success');
+                
+                // Disable input controls
+                this.messageInput.disabled = true;
+                this.sendBtn.disabled = true;
+                this.recordBtn.disabled = true;
+                const endBtn = document.getElementById('endBtn');
+                if (endBtn) {
+                    endBtn.disabled = true;
+                    endBtn.textContent = 'Ending...';
+                }
+                
+                // Close WebSocket if open
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.close();
+                    this.ws = null;
+                    this.useWebSocket = false;
+                    this.connectionType.textContent = 'HTTP';
+                }
+                
+                // Mark session as ended
+                this.sessionEnded = true;
+                
+                // Redirect to review page after a brief delay
+                setTimeout(() => {
+                    window.location.href = '/review';
+                }, 1500);
+            }
+
+            updateAudioToggleVisual(isEnabled) {
+                const container = document.getElementById('audioToggleContainer');
+                const label = document.getElementById('audioToggleLabel');
+                const toggleSlider = container.querySelector('.toggle-slider');
+                const toggleHandle = container.querySelector('.toggle-handle');
+                
+                if (isEnabled) {
+                    container.classList.remove('off');
+                    container.classList.add('on');
+                    container.style.background = '#28a745';
+                    container.style.borderColor = '#218838';
+                    label.textContent = '🔊 Audio ON';
+                    label.style.color = 'white';
+                    if (toggleSlider) {
+                        toggleSlider.style.backgroundColor = '#218838';
+                    }
+                    if (toggleHandle) {
+                        toggleHandle.style.transform = 'translateX(20px)';
+                    }
+                } else {
+                    container.classList.remove('on');
+                    container.classList.add('off');
+                    container.style.background = '#ffffff';
+                    container.style.borderColor = '#e9ecef';
+                    label.textContent = '🔇 Audio OFF';
+                    label.style.color = '#6c757d';
+                    if (toggleSlider) {
+                        toggleSlider.style.backgroundColor = '#adb5bd';
+                    }
+                    if (toggleHandle) {
+                        toggleHandle.style.transform = 'translateX(0)';
+                    }
+                }
+            }
+
             async sendWebSocketMessage(message) {
                 const messageData = {
                     message: message,
-                    session_id: this.sessionId
+                    session_id: this.sessionId,
+                    audio_enabled: this.audioEnabled,
+                    job_scenario: this.jobScenario
                 };
 
                 return new Promise((resolve, reject) => {
@@ -906,7 +1216,9 @@
                             // Stage 3: Getting ready to respond
                             this.setStage3Active();
                             
-                            this.addMessage(data.response, false, data.audio_data);
+                            // Only play audio if audio is enabled
+                            const audioData = this.audioEnabled ? data.audio_data : null;
+                            this.addMessage(data.response, false, audioData);
                             
                             // All stages completed
                             this.setAllStagesCompleted();
@@ -929,6 +1241,11 @@
             }
 
             async toggleRecording() {
+                if (this.sessionEnded) {
+                    this.updateStatus('Session has ended. Refresh to start new session.', 'warning');
+                    return;
+                }
+
                 if (!this.isRecording) {
                     await this.startRecording();
                 } else {
@@ -989,6 +1306,11 @@
             }
 
             async processAudio(audioBlob) {
+                if (this.sessionEnded) {
+                    this.updateStatus('Session has ended. Refresh to start new session.', 'warning');
+                    return;
+                }
+
                 // Hide loading overlay, we'll use progress stages instead
                 this.hideLoading();
                 
@@ -1039,7 +1361,9 @@
                     body: JSON.stringify({
                         message: '', // Empty, will use audio_data
                         audio_data: base64Audio,
-                        session_id: this.sessionId
+                        session_id: this.sessionId,
+                        audio_enabled: this.audioEnabled,
+                        job_scenario: this.jobScenario
                     })
                 });
 
@@ -1058,11 +1382,12 @@
                         this.updateMessageContent(tempMessage, '🎤 [Audio Message]');
                     }
                     
-                    // Stage 3: Getting ready to respond with audio
+                    // Stage 3: Getting ready to respond
                     this.setStage3Active();
                     
-                    // Add assistant response
-                    this.addMessage(data.response, false, data.audio_data);
+                    // Only play audio if audio is enabled
+                    const audioData = this.audioEnabled ? data.audio_data : null;
+                    this.addMessage(data.response, false, audioData);
                     
                     // All stages completed
                     this.setAllStagesCompleted();
@@ -1083,7 +1408,9 @@
                 const messageData = {
                     message: '',
                     audio_data: base64Audio,
-                    session_id: this.sessionId
+                    session_id: this.sessionId,
+                    audio_enabled: this.audioEnabled,
+                    job_scenario: this.jobScenario
                 };
 
                 return new Promise((resolve, reject) => {
@@ -1108,11 +1435,12 @@
                                 this.updateMessageContent(tempMessage, '🎤 [Audio Message]');
                             }
                             
-                            // Stage 3: Getting ready to respond with audio
+                            // Stage 3: Getting ready to respond
                             this.setStage3Active();
                             
-                            // Add assistant response
-                            this.addMessage(data.response, false, data.audio_data);
+                            // Only play audio if audio is enabled
+                            const audioData = this.audioEnabled ? data.audio_data : null;
+                            this.addMessage(data.response, false, audioData);
                             
                             // All stages completed
                             this.setAllStagesCompleted();
@@ -1167,25 +1495,6 @@
                 return new Blob([byteArray], { type: mimeType });
             }
 
-            clearChat() {
-                this.chatContainer.innerHTML = `
-                    <div class="info-panel">
-                        <strong>🎙️ Full Audio Interaction Enabled</strong>
-                        • Click "Record Audio" to speak to the bot<br>
-                        • The bot will respond with both text and audio<br>
-                        • Uses local Whisper for STT and Coqui for TTS<br>
-                        • Xiaomi MiMO-V2-Flash as the AI brain
-                    </div>
-                    <div class="message assistant">
-                        <div class="message-bubble">
-                            Chat cleared! How can I help you? 🚀
-                            <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                        </div>
-                    </div>
-                `;
-                this.updateStatus('Chat cleared', 'success');
-            }
-
             async connectWebSocket() {
                 try {
                     this.showLoading('Connecting to WebSocket...');
@@ -1223,18 +1532,6 @@
                 }
             }
 
-            disconnect() {
-                if (this.ws) {
-                    this.ws.close();
-                    this.ws = null;
-                }
-                this.useWebSocket = false;
-                this.connectionType.textContent = 'HTTP';
-                this.updateStatus('Disconnected - Using HTTP', 'warning');
-                
-                // Create new session
-                this.createSession();
-            }
         }
 
         // Initialize the app when DOM is loaded
@@ -1253,12 +1550,6 @@
         window.switchToWebSocket = () => {
             if (window.chatApp) {
                 window.chatApp.connectWebSocket();
-            }
-        };
-
-        window.switchToHTTP = () => {
-            if (window.chatApp) {
-                window.chatApp.disconnect();
             }
         };
     </script>
