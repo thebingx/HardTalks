@@ -333,21 +333,75 @@
         .expander-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease;
+            transition: max-height 0.5s ease;
             background: white;
         }
 
         .expander-content.expanded {
-            max-height: 2000px;
+            max-height: none;
         }
 
         .conversation-transcript {
             padding: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.6;
+            background: #f8f9fa;
+            border-radius: 8px;
         }
 
+        /* Chat-style message containers */
+        .chat-message {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-message.user {
+            justify-content: flex-end;
+        }
+
+        .chat-message.assistant {
+            justify-content: flex-start;
+        }
+
+        .chat-message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .chat-message.user .chat-message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-message.assistant .chat-message-bubble {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .chat-message-time {
+            font-size: 10px;
+            color: #666;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .chat-message.user .chat-message-time {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Legacy transcript styles (kept for compatibility) */
         .transcript-message {
             margin-bottom: 15px;
             padding: 10px;
@@ -591,16 +645,6 @@
         </div>
 
         <div class="report-content" id="report">
-            <!-- Session Selector (hidden by default) -->
-            <div class="session-selector" id="sessionSelector" style="display: none;">
-                <h3>📋 Select Past Session</h3>
-                <div class="session-list" id="sessionList"></div>
-                <div style="margin-top: 15px; text-align: center;">
-                    <button class="btn btn-primary" onclick="reviewApp.loadSelectedSession()">Load Selected Session</button>
-                    <button class="btn btn-secondary" onclick="reviewApp.hideSessionSelector()">Cancel</button>
-                </div>
-            </div>
-
             <!-- Job Info -->
             <div class="job-info" id="jobInfo"></div>
 
@@ -672,11 +716,21 @@
                 </div>
             </div>
 
+            <!-- Session Selector (hidden by default, shown at bottom) -->
+            <div class="session-selector" id="sessionSelector" style="display: none;">
+                <h3>📋 Select Past Session</h3>
+                <div class="session-list" id="sessionList"></div>
+                <div style="margin-top: 15px; text-align: center;">
+                    <button class="btn btn-primary" onclick="reviewApp.loadSelectedSession()">Load Selected Session</button>
+                    <button class="btn btn-secondary" onclick="reviewApp.hideSessionSelector()">Cancel</button>
+                </div>
+            </div>
+
             <!-- Action Buttons -->
             <div class="action-buttons">
                 <button class="btn btn-primary" onclick="window.print()">🖨️ Print Report</button>
-                <button class="btn btn-secondary" onclick="window.location.href='/chat'">🔄 New Interview</button>
-                <button class="btn btn-secondary" onclick="reviewApp.showSessionSelector()">📂 Past Sessions</button>
+                <button class="btn btn-secondary" id="newInterviewBtn">🔄 New Interview</button>
+                <button class="btn btn-secondary" id="pastSessionsBtn">📂 Past Sessions</button>
                 <button class="btn btn-secondary" onclick="reviewApp.loadCurrentSession()" id="currentSessionBtn" style="display: none;">📋 Current Session</button>
             </div>
         </div>
@@ -693,11 +747,14 @@
             }
 
             async init() {
+                // Setup button event listeners
+                this.setupEventListeners();
+
                 try {
                     // Check URL parameters for session selection
                     const urlParams = new URLSearchParams(window.location.search);
                     const sessionId = urlParams.get('session');
-                    
+
                     if (sessionId) {
                         // Load specific session
                         await this.loadSessionById(sessionId);
@@ -706,17 +763,17 @@
                     } else {
                         // Load current session data
                         const response = await fetch('/api/review/data');
-                        
+
                         if (response.status === 404) {
                             // No data available
                             this.showError('No interview data found. Please complete an interview session first.');
                             return;
                         }
-                        
+
                         if (!response.ok) {
                             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                         }
-                        
+
                         const result = await response.json();
                         if (!result.success) {
                             // Show a more helpful message based on the error
@@ -729,30 +786,30 @@
                             }
                             return;
                         }
-                        
+
                         // Debug: log what we received
                         console.log('API Response:', result);
                         console.log('Type of job_data:', typeof result.job_data);
                         console.log('Type of conversation:', typeof result.conversation);
                         console.log('job_data value:', result.job_data);
                         console.log('conversation value:', result.conversation);
-                        
+
                         if (result.job_data === undefined || result.job_data === null) {
                             throw new Error('Job data is undefined or null in response');
                         }
                         if (result.conversation === undefined || result.conversation === null) {
                             throw new Error('Conversation data is undefined or null in response');
                         }
-                        
+
                         // Validate conversation structure
                         if (!result.conversation.conversation || !Array.isArray(result.conversation.conversation)) {
                             console.warn('Conversation structure issue:', result.conversation);
                             throw new Error('Conversation data is not in expected format (missing conversation array)');
                         }
-                        
+
                         this.currentJobData = result.job_data;
                         this.currentConversation = result.conversation;
-                        
+
                         console.log('Successfully set variables');
                         console.log('currentJobData:', this.currentJobData);
                         console.log('currentConversation:', this.currentConversation);
@@ -760,7 +817,7 @@
 
                         // Generate review
                         await this.generateReview();
-                        
+
                         // Hide "Current Session" button (already on current)
                         document.getElementById('currentSessionBtn').style.display = 'none';
                     }
@@ -769,6 +826,18 @@
                     console.error('Init error:', error);
                     this.showError(error.message);
                 }
+            }
+
+            setupEventListeners() {
+                // New Interview button - navigate to chat page
+                document.getElementById('newInterviewBtn').addEventListener('click', () => {
+                    window.location.href = '/chat';
+                });
+
+                // Past Sessions button - show session selector
+                document.getElementById('pastSessionsBtn').addEventListener('click', () => {
+                    this.showSessionSelector();
+                });
             }
 
             async generateReview() {
@@ -927,7 +996,7 @@
 
             renderConversation() {
                 const transcriptDiv = document.getElementById('conversationTranscript');
-                
+
                 if (!this.currentConversation) {
                     transcriptDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No conversation data available</p></div>';
                     return;
@@ -952,15 +1021,15 @@
                 let html = '';
 
                 messages.forEach(msg => {
-                    const role = msg.role === 'user' ? 'Candidate' : 'Interviewer';
                     const roleClass = msg.role === 'user' ? 'user' : 'assistant';
-                    const timestamp = new Date(msg.timestamp).toLocaleString();
-                    
+                    const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
                     html += `
-                        <div class="transcript-message ${roleClass}">
-                            <div class="transcript-role">${role}</div>
-                            <div class="transcript-content">${msg.content}</div>
-                            <div class="transcript-time">${timestamp}</div>
+                        <div class="chat-message ${roleClass}">
+                            <div class="chat-message-bubble">
+                                ${msg.content}
+                                <div class="chat-message-time">${time}</div>
+                            </div>
                         </div>
                     `;
                 });
@@ -971,22 +1040,22 @@
             async showSessionSelector() {
                 const selector = document.getElementById('sessionSelector');
                 const list = document.getElementById('sessionList');
-                
+
                 try {
                     // Load available sessions
                     const response = await fetch('/api/conversations/list');
                     if (!response.ok) throw new Error('Failed to load sessions');
-                    
+
                     const result = await response.json();
                     if (!result.success) throw new Error(result.error);
-                    
+
                     this.availableSessions = result.sessions;
-                    
+
                     if (this.availableSessions.length === 0) {
                         list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No past sessions found</p></div>';
                     } else {
-                        list.innerHTML = this.availableSessions.map(session => `
-                            <div class="session-item" onclick="reviewApp.selectSession('${session.filename}')">
+                        list.innerHTML = this.availableSessions.map((session, index) => `
+                            <div class="session-item" data-filename="${session.filename}" data-index="${index}">
                                 <div class="session-info">
                                     <div style="font-weight: 600;">${session.job_title || 'Interview Session'}</div>
                                     <div class="session-time">${new Date(session.timestamp).toLocaleString()}</div>
@@ -994,11 +1063,21 @@
                                 <span class="session-badge">${session.message_count} messages</span>
                             </div>
                         `).join('');
+
+                        // Add click handlers to session items
+                        list.querySelectorAll('.session-item').forEach(item => {
+                            item.addEventListener('click', (e) => {
+                                this.selectSession(e.currentTarget);
+                            });
+                        });
                     }
-                    
+
                     selector.style.display = 'block';
-                    document.getElementById('report').scrollIntoView({ behavior: 'smooth' });
-                    
+                    // Scroll to the session selector (now at bottom of page)
+                    setTimeout(() => {
+                        selector.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+
                 } catch (error) {
                     alert('Failed to load sessions: ' + error.message);
                 }
@@ -1008,17 +1087,17 @@
                 document.getElementById('sessionSelector').style.display = 'none';
             }
 
-            selectSession(filename) {
+            selectSession(element) {
                 // Remove previous selection
                 document.querySelectorAll('.session-item').forEach(item => {
                     item.classList.remove('selected');
                 });
-                
+
                 // Add selection to clicked item
-                event.currentTarget.classList.add('selected');
-                
+                element.classList.add('selected');
+
                 // Store selection
-                this.selectedSession = filename;
+                this.selectedSession = element.dataset.filename;
             }
 
             async loadSelectedSession() {
@@ -1037,38 +1116,58 @@
                     document.getElementById('loading').style.display = 'block';
                     document.getElementById('report').style.display = 'none';
                     document.getElementById('error').style.display = 'none';
+                    document.getElementById('sessionSelector').style.display = 'none';
 
                     console.log('Loading session:', sessionId);
 
                     // Load session data
                     const response = await fetch(`/api/conversations/${sessionId}`);
+                    console.log('Response status:', response.status);
+
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
-                    
+
                     const result = await response.json();
-                    console.log('Session data:', result);
-                    
+                    console.log('Session data received:', result);
+
                     if (!result.success) {
                         throw new Error(result.error || 'Failed to load session');
                     }
 
                     // Validate data
                     if (!result.job_data) {
+                        console.error('Job data missing from response:', result);
                         throw new Error('Job data not found in session');
                     }
                     if (!result.conversation) {
+                        console.error('Conversation data missing from response:', result);
                         throw new Error('Conversation data not found in session');
                     }
-                    if (!result.conversation.conversation || !Array.isArray(result.conversation.conversation)) {
-                        throw new Error('Conversation format is invalid');
+
+                    // Handle different conversation structures
+                    let conversationData = result.conversation;
+                    let conversationArray;
+
+                    // Check if conversation has nested structure
+                    if (conversationData.conversation && Array.isArray(conversationData.conversation)) {
+                        conversationArray = conversationData.conversation;
+                        console.log('Using nested conversation structure, messages:', conversationArray.length);
+                    } else if (Array.isArray(conversationData)) {
+                        conversationArray = conversationData;
+                        console.log('Using direct conversation array, messages:', conversationArray.length);
+                    } else {
+                        console.error('Invalid conversation structure:', conversationData);
+                        throw new Error('Conversation format is invalid - expected array or object with conversation property');
                     }
 
                     // Store data
                     this.currentJobData = result.job_data;
-                    this.currentConversation = result.conversation;
+                    this.currentConversation = conversationData;
 
                     console.log('Session loaded successfully');
+                    console.log('Job data:', this.currentJobData);
+                    console.log('Conversation:', this.currentConversation);
 
                     // Generate review
                     await this.generateReview();
@@ -1089,8 +1188,11 @@
         }
 
         // Initialize when page loads
+        // Global instance so onclick handlers can access it
+        let reviewApp;
+
         document.addEventListener('DOMContentLoaded', () => {
-            new ReviewApp();
+            reviewApp = new ReviewApp();
         });
     </script>
 </body>

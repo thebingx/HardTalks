@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 HardTalks - Chat Bot with Audio Interaction
-FastAPI backend with local Whisper STT, Xiaomi MiMO LLM, and pyttsx3 TTS
 """
 
 import os
@@ -31,6 +30,53 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Configure NLTK to use local data directory BEFORE importing anything that uses NLTK
+# This prevents internet access on startup
+NLTK_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nltk_data')
+os.makedirs(NLTK_DATA_DIR, exist_ok=True)
+os.environ['NLTK_DATA'] = NLTK_DATA_DIR
+
+# Ensure NLTK data is available locally (download once if missing)
+def ensure_nltk_data():
+    """Download required NLTK data locally if not already present"""
+    try:
+        import nltk
+
+        # NLTK data with their correct paths
+        required_data = {
+            'punkt': 'tokenizers/punkt',
+            'punkt_tab': 'tokenizers/punkt_tab',
+            'averaged_perceptron_tagger': 'taggers/averaged_perceptron_tagger',
+            'averaged_perceptron_tagger_eng': 'taggers/averaged_perceptron_tagger_eng'
+        }
+
+        # Check if all required data exists
+        missing_data = []
+        for data_name, data_path in required_data.items():
+            try:
+                nltk.data.find(data_path)
+            except LookupError:
+                missing_data.append(data_name)
+
+        # Only log and download if data is missing
+        if missing_data:
+            logger.info(f"📥 Downloading NLTK data: {', '.join(missing_data)}")
+            for data_name in missing_data:
+                try:
+                    nltk.download(data_name, download_dir=NLTK_DATA_DIR, quiet=True)
+                except Exception as e:
+                    logger.warning(f"⚠️  Could not download NLTK data {data_name}: {e}")
+        # Data already exists - silent success
+
+    except ImportError:
+        # Silent - NLTK will be imported by RealtimeTTS
+        pass
+    except Exception as e:
+        logger.warning(f"⚠️  NLTK setup issue: {e}")
+
+# Initialize NLTK data before importing libraries that use it
+ensure_nltk_data()
 
 # Import offline components
 FASTER_WHISPER_AVAILABLE = False

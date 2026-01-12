@@ -15,6 +15,7 @@ models/
 *.onnx
 *.json
 *.wav
+nltk_data/
 
 # IDE
 .vscode/
